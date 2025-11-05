@@ -1,0 +1,4 @@
+- task=h1-door-v0
+- steps=100000
+- eval_freq=5000
+- seed=0
