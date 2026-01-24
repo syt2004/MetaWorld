@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 
 class ExpertTrainer(OnlineTrainer):
-    """基础专家训练器"""
+    """Base Expert Trainer"""
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,19 +21,19 @@ class ExpertTrainer(OnlineTrainer):
         video_dir = os.path.join(self.cfg.work_dir, 'videos')
         self.recorder = VideoRecorder(video_dir, fps=15)
         
-        print(f"视频目录: {video_dir}")
+        print(f"Video directory: {video_dir}")
     
     def eval(self):
-        # 评估时也显示引导信息
+        # Show guidance info during evaluation
         if self.guidance_weight > 0 and self.base_experts is not None:
-            print(f"\n[评估] 当前使用专家引导（引导权重={self.guidance_weight}）")
+            print(f"\n[Evaluation] Currently using expert guidance (guidance weight={self.guidance_weight})")
       
         ep_rewards, ep_successes = [], []
         
         for i in range(self.cfg.eval_episodes):
             obs, done, ep_reward, t = self.env.reset()[0], False, 0, 0
             
-            # 显示评估开始时的引导
+            # Show guidance at evaluation start
             if i == 0 and self.guidance_weight > 0:
                 _ = self.get_expert_guidance(obs, step_num=0)
          

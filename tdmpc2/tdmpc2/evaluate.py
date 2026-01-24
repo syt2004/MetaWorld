@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 if sys.platform == "linux":
     os.environ["MUJOCO_GL"] = "egl"
 elif sys.platform == "win32":
-    os.environ["MUJOCO_GL"] = "glfw"  # Windows使用GLFW渲染
+    os.environ["MUJOCO_GL"] = "glfw"  # Windows uses GLFW rendering
 
 import warnings
 

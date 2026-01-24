@@ -5,7 +5,7 @@ from LFD.stage2.base_tracking import BaseTracking
 
 
 class CarryTracking(BaseTracking):
-    """搬运跟踪任务"""
+    """Carrying tracking task"""
     
     qpos0_robot = {
         "h1": "0 0 0.98 1 0 0 0 0 0 -0.4 0.8 -0.4 0 0 -0.4 0.8 -0.4 0 0 0 0 0 0 0 0 0",
@@ -31,22 +31,23 @@ class CarryTracking(BaseTracking):
         )
     
     def get_obs(self):
+        """Observation space"""
         position = self._env.data.qpos.flat.copy()[:self.robot.dof]
         velocity = self._env.data.qvel.flat.copy()[:self.robot.dof - 1]
         return np.concatenate((position, velocity))
     
     def get_task_reward(self):
-        """任务奖励：携带姿态"""
-        # 上身直立
+        """Task reward: carrying posture"""
+        # Upper body upright
         r_upright = self.robot.torso_upright()
         
-        # 双手位置（携带物体时手应该在前方）
+        # Hands position (hands should be in front when carrying)
         left_hand_h = self.robot.left_hand_position()[2]
         right_hand_h = self.robot.right_hand_position()[2]
         hands_h = (left_hand_h + right_hand_h) / 2
         r_hands = np.exp(-2.0 * abs(hands_h - 1.0))
         
-        # 缓慢移动
+        # Slow movement
         vel_x = abs(self.robot.body_velocity()[0])
         r_slow = np.exp(-abs(vel_x - 0.5))
         
@@ -61,8 +62,11 @@ class CarryTracking(BaseTracking):
         return total, info
     
     def get_terminated(self):
+        """Termination conditions"""
+        # Fall down
         if self.robot.head_height() < 0.5:
             return True, {'fall': True}
+        # Flip over
         if abs(self.robot.torso_upright()) < 0.4:
             return True, {'flip': True}
         return False, {}

@@ -67,4 +67,3 @@ for task_name, config in TRACKING_TASKS.items():
             ),
         }
     )
-

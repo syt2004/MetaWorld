@@ -7,7 +7,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tdmpc2'))
 
-# 注册任务
+# Register tasks
 import LFD.stage2
 
 # if sys.platform == "linux":
@@ -38,9 +38,9 @@ torch.backends.cudnn.benchmark = True
 
 @hydra.main(config_name="expert_config", config_path=".", version_base=None)
 def train(cfg: dict):
-    """训练基础专家（tracking任务）
+    """Train base experts (tracking tasks)
     
-    用法: python train_expert.py task=h1-walk-tracking-v0 steps=1000000
+    Usage: python train_expert.py task=h1-walk-tracking-v0 steps=1000000
     """
     assert cfg.steps > 0
     
@@ -54,9 +54,9 @@ def train(cfg: dict):
     
     set_seed(cfg.seed)
     
-    print(colored("训练基础专家", "green", attrs=["bold"]))
-    print(colored(f"任务: {cfg.task}", "yellow"))
-    print(colored(f"目录: {cfg.work_dir}", "yellow"))
+    print(colored("Training base experts", "green", attrs=["bold"]))
+    print(colored(f"Task: {cfg.task}", "yellow"))
+    print(colored(f"Directory: {cfg.work_dir}", "yellow"))
     
  
     import gymnasium as gym
@@ -90,8 +90,8 @@ def train(cfg: dict):
     )
     
     trainer.train()
-    print(colored("\n训练完成", "green", attrs=["bold"]))
-    print(colored(f"视频: {cfg.work_dir}/videos/", "yellow"))
+    print(colored("\nTraining completed", "green", attrs=["bold"]))
+    print(colored(f"Videos: {cfg.work_dir}/videos/", "yellow"))
 
 
 if __name__ == "__main__":

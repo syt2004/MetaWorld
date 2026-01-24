@@ -26,15 +26,17 @@ class SitTracking(BaseTracking):
         return np.concatenate((position, velocity))
     
     def get_obs(self):
+        """Observation space"""
         position = self._env.data.qpos.flat.copy()[:self.robot.dof]
         velocity = self._env.data.qvel.flat.copy()[:self.robot.dof - 1]
         return np.concatenate((position, velocity))
     
     def get_task_reward(self):
-        # 保持低高度
+        """Task reward"""
+        # Maintain low height
         r_low = np.exp(-3.0 * max(0, self.robot.head_height() - 0.8))
         
-        # 保持稳定
+        # Stay stable
         r_stable = self.robot.torso_upright()
         
         total = 0.6 * r_low + 0.4 * r_stable
@@ -47,7 +49,9 @@ class SitTracking(BaseTracking):
         return total, info
     
     def get_terminated(self):
+        """Termination conditions"""
+        # Fall down
         if self.robot.head_height() < 0.3:
-            return True, {}
+            return True, {'fall': True}
         return False, {}
 

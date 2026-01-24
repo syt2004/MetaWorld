@@ -5,15 +5,15 @@ from LFD.stage2.base_tracking import BaseTracking
 
 
 class RunTracking(BaseTracking):
-    """跑步跟踪任务"""
+    """Running tracking task"""
     
     qpos0_robot = {
         "h1": "0 0 0.98 1 0 0 0 0 0 -0.4 0.8 -0.4 0 0 -0.4 0.8 -0.4 0 0 0 0 0 0 0 0 0",
     }
     
     traj_file = 'h1_run.npz'
-    w_tracking = 0.7   # 降低tracking权重，给task更多空间
-    w_task = 0.3       # 提高task权重，强调前进
+    w_tracking = 0.7   # Reduce tracking weight, give more space to task
+    w_task = 0.3       # Increase task weight, emphasize forward movement
     
     frame_skip = 10
     max_episode_steps = 1000
@@ -31,24 +31,25 @@ class RunTracking(BaseTracking):
         )
     
     def get_obs(self):
+        """Observation space"""
         position = self._env.data.qpos.flat.copy()[:self.robot.dof]
         velocity = self._env.data.qvel.flat.copy()[:self.robot.dof - 1]
         return np.concatenate((position, velocity))
     
     def get_task_reward(self):
-        """任务奖励"""
-        # 前进速度奖励
+        """Task reward"""
+        # Forward speed reward
         vel_x = self.robot.body_velocity()[0]
-        r_forward = np.clip(vel_x / 1.5, 0, 2.0)  # 鼓励达到1.5m/s，最高2倍奖励
+        r_forward = np.clip(vel_x / 1.5, 0, 2.0)  # Encourage reaching 1.5m/s, maximum 2x reward
         
-        # 保持直立
+        # Stay upright
         r_upright = self.robot.torso_upright()
         
-        # 不要倒下
+        # Don't fall down
         head_h = self.robot.head_height()
         r_height = float(head_h > 0.5)
         
-        # 前向移
+        # Forward movement
         total = 0.7 * r_forward + 0.2 * r_upright + 0.1 * r_height
         
         info = {
@@ -60,9 +61,11 @@ class RunTracking(BaseTracking):
         return total, info
     
     def get_terminated(self):
-     
+        """Termination conditions"""
+        # Fall down
         if self.robot.head_height() < 0.3:  
             return True, {'fall': True}
+        # Flip over
         if abs(self.robot.torso_upright()) < 0.1:  
             return True, {'flip': True}
         return False, {}

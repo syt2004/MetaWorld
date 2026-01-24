@@ -11,9 +11,9 @@ from LFD.stage2 import rewards
 
 
 class BaseTracking(Task):
-    """跟踪任务基类
+    """Base class for tracking tasks
     
-    使用AMASS参考轨迹引导机器人学习运动
+    Uses AMASS reference trajectories to guide robot learning movements
     """
     
   
@@ -27,19 +27,19 @@ class BaseTracking(Task):
         if env is None:
             return
         
-        # 加载参考轨迹
+        # Load reference trajectory
         self.ref_traj = self._load_traj()
         self.traj_len = len(self.ref_traj['dof'])
         
-        # 当前时间步
+        # Current time step
         self.t = 0
         self.prev_action = None
         
-        print(f"加载参考轨迹: {self.traj_file}")
-        print(f"  帧数: {self.traj_len}, 时长: {self.traj_len/50:.1f}s")
+        print(f"Loading reference trajectory: {self.traj_file}")
+        print(f"  Frames: {self.traj_len}, Duration: {self.traj_len/50:.1f}s")
     
     def _load_traj(self):
-        """加载参考轨迹"""
+        """Load reference trajectory"""
         traj_path = os.path.join(
             PROJECT_ROOT, 
             'LFD/data', 
@@ -47,13 +47,13 @@ class BaseTracking(Task):
         )
         
         # if not os.path.exists(traj_path):
-        #     raise FileNotFoundError(f"找不到轨迹: {traj_path}")
+        #     raise FileNotFoundError(f"Trajectory not found: {traj_path}")
         
         return np.load(traj_path)
     
     def get_ref_frame(self):
-        """获取当前时刻的参考帧"""
-        # 循环使用轨迹
+        """Get reference frame at current time"""
+        # Loop through trajectory
         idx = self.t % self.traj_len
         
         return {
@@ -62,14 +62,14 @@ class BaseTracking(Task):
         }
     
     def compute_tracking_reward(self):
-        """计算跟踪奖励"""
+        """Compute tracking reward"""
         ref = self.get_ref_frame()
         
-        # 当前状态
+        # Current state
         q_cur = self.robot.joint_angles()
         q_ref = ref['dof']
         
-        # 速度 
+        # Velocity 
         vel_cur = self.robot.joint_velocities()
         vel_ref = self._compute_ref_velocity()
         
@@ -82,25 +82,25 @@ class BaseTracking(Task):
         return r_track, info
     
     def _compute_ref_velocity(self):
-        """从参考轨迹计算速度参考"""
+        """Compute reference velocity from trajectory"""
         if self.t == 0:
-            # 第一帧，使用零速度
+            # First frame, use zero velocity
             return np.zeros_like(self.robot.joint_velocities())
         
-        # 获取当前和前一帧的关节角度
+        # Get current and previous frame joint angles
         idx_curr = self.t % self.traj_len
         idx_prev = (self.t - 1) % self.traj_len
         
        
         if idx_prev >= idx_curr and self.t > 0:
-            # 跨越循环边界，使用前一次的速度或零速度
+            # Crossed loop boundary, use zero velocity
             return np.zeros_like(self.robot.joint_velocities())
         
         q_curr = self.ref_traj['dof'][idx_curr]
         q_prev = self.ref_traj['dof'][idx_prev]
         
-        # 计算速度 (角度差 / 时间差)
-        dt = 1.0 / 50.0  # 50Hz采样率
+        # Compute velocity (angle difference / time difference)
+        dt = 1.0 / 50.0  # 50Hz sampling rate
         vel_ref = (q_curr - q_prev) / dt
         
         return vel_ref
@@ -110,14 +110,14 @@ class BaseTracking(Task):
         return 0.0, {}
     
     def get_reward(self):
-        """总奖励 = 跟踪奖励 + 任务奖励"""
-        # 跟踪奖励
+        """Total reward = tracking reward + task reward"""
+        # Tracking reward
         r_track, track_info = self.compute_tracking_reward()
         
-        # 任务奖励
+        # Task reward
         r_task, task_info = self.get_task_reward()
         
-        # 组合
+        # Combine
         total = self.w_tracking * r_track + self.w_task * r_task
         
         info = {
@@ -130,20 +130,20 @@ class BaseTracking(Task):
         return total, info
     
     def step(self, action):
-        """执行动作"""
-        # 记录动作（用于平滑度）
+        """Execute action"""
+        # Record action (for smoothness)
         self.prev_action = action.copy()
         
-        # 执行
+        # Execute
         obs, reward, terminated, truncated, info = super().step(action)
         
-        # 更新时间
+        # Update time
         self.t += 1
         
         return obs, reward, terminated, truncated, info
     
     def reset_model(self):
-        """重置"""
+        """Reset"""
         self.t = 0
         self.prev_action = None
         return super().reset_model()

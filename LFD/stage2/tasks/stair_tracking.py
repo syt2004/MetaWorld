@@ -31,15 +31,15 @@ class StairTracking(BaseTracking):
         return np.concatenate((position, velocity))
     
     def get_task_reward(self):
-        # 向前移动
+        # Move forward
         vel_x = self.robot.body_velocity()[0]
         r_forward = np.clip(vel_x / 1.0, 0, 2.0)
         
-        # 向上移动
+        # Move upward
         vel_z = self.robot.body_velocity()[2]
         r_upward = np.clip(vel_z / 0.5, 0, 2.0)
         
-        # 保持直立
+        # Stay upright
         r_upright = self.robot.torso_upright()
         
         total = 0.5 * r_forward + 0.3 * r_upward + 0.2 * r_upright

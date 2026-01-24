@@ -81,9 +81,9 @@ class Experts:
                 try:
                     data = torch.load(ckpt, map_location=self.device)
                     
-                   
+                    
                     if 'dense1.weight' in data or (isinstance(data, dict) and 'dense1.weight' in data.get('model', {})):
-                   
+                    
                         state_dict = data if 'dense1.weight' in data else data['model']
                         model = SimpleMLP(state_dict).to(self.device)
                         
@@ -111,7 +111,7 @@ class Experts:
                 except Exception as e:
                     print(f"[FAIL] {name}: {e}")
         else:
-           
+            
             tasks = [
                 ('stand', 'h1-stand-tracking-v0'),
                 ('walk', 'h1-walk-tracking-v0'),

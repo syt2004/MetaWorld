@@ -4,11 +4,11 @@ import re
 
 
 class VLM:
-    """视觉语言模型接口"""
+    """Vision Language Model Interface"""
     
     def __init__(self, 
                  base_url="https://yinli.one/v1",
-                 api_key="sk-bjKmXhPPpWsKR88WQIQJoipchZ92JQrK4p5IL3CelGuMaEgQ",
+                 api_key="YOUR_API_KEY",
                  model="gpt-4o-mini",
                  n_experts=7):
         self.base_url = base_url
@@ -21,101 +21,99 @@ class VLM:
             self.experts = ['stand', 'walk', 'run', 'sit', 'crawl', 'carry', 'reach', 'stair']
     
     def get_weights(self, task_desc, env_info=None, verbose=False):
-        """获取专家权重"""
+        """Get expert weights"""
         if verbose:
             print(f"\n{'='*60}")
-            print(f"VLM分析过程")
+            print(f"VLM Analysis Process")
             print(f"{'='*60}")
-            print(f"任务描述: {task_desc}")
+            print(f"Task description: {task_desc}")
             if env_info:
-                print(f"环境状态: {env_info}")
+                print(f"Environment state: {env_info}")
         
-     
         for attempt in range(3):
             try:
                 if verbose:
-                    print(f"\n调用VLM API...")
+                    print(f"\nCalling VLM API...")
                 
                 response = self._call_api(task_desc, env_info)
                 
                 if verbose:
-                    print(f"VLM响应: {response}")
+                    print(f"VLM response: {response}")
                 
                 weights = self._parse(response)
                 if weights is not None:
                     if verbose:
-                        print(f"\n专家权重:")
+                        print(f"\nExpert weights:")
                         for i, (name, w) in enumerate(zip(self.experts, weights)):
                             bar = '█' * int(w)
                             print(f"  {name:12s}: {w:4.1f} {bar}")
-                        print(f"\n→ 推荐: {self.experts[weights.argmax()]}")
+                        print(f"\n→ Recommendation: {self.experts[weights.argmax()]}")
                     return weights
             except Exception as e:
                 if verbose:
-                    print(f"尝试{attempt+1}失败: {e}")
+                    print(f"Attempt {attempt+1} failed: {e}")
                 pass
         
-      
         if verbose:
-            print(f"\nAPI失败，使用规则方法...")
+            print(f"\nAPI failed, using rule-based method...")
         
         weights = self._rule_based(task_desc)
         
         if verbose:
-            print(f"\n专家权重:")
+            print(f"\nExpert weights:")
             for i, (name, w) in enumerate(zip(self.experts, weights)):
                 bar = '█' * int(w)
                 print(f"  {name:12s}: {w:4.1f} {bar}")
-            print(f"\n→ 推荐: {self.experts[weights.argmax()]}")
+            print(f"\n→ Recommendation: {self.experts[weights.argmax()]}")
         
         return weights
     
     def _call_api(self, task_desc, env_info=None):
-        """调用API"""
+        """Call API"""
         if self.n_experts == 7:
-            prompt = f"""你是机器人任务分析专家。我有7个运动专家：
+            prompt = f"""You are a robot task analysis expert. I have 7 motion experts:
 
-1. stand - 站立保持
-2. walk - 正常行走  
-3. run - 快速跑步
-4. crawl - 爬行
-5. carry - 搬运物体
-6. reach_one - 单手伸手抓取（开门、按钮等精细操作）
-7. reach_two - 双手伸手抓取（搬运大物体）
+1. stand - standing maintenance
+2. walk - normal walking  
+3. run - fast running
+4. crawl - crawling
+5. carry - carrying objects
+6. reach_one - single-hand reaching and grabbing (fine operations like opening doors, pressing buttons, etc.)
+7. reach_two - two-hand reaching and grabbing (carrying large objects)
 
-任务："{task_desc}"
-{f'当前环境状态：{env_info}' if env_info else ''}
+Task: "{task_desc}"
+{f'Current environment state: {env_info}' if env_info else ''}
 
-根据任务和当前状态，为每个专家打分(0-10)，表示重要性。
+Based on the task and current state, score each expert (0-10) to indicate importance.
 
-只返回7个数字，逗号分隔：
+Return only 7 numbers, comma-separated:
 [stand, walk, run, crawl, carry, reach_one, reach_two]
 
-示例：
-"走到门前开门" → [1.0, 7.0, 0.5, 0.1, 0.5, 9.0, 2.0]  (walk走近 + reach_one开门)
-"搬运箱子" → [2.0, 5.0, 0.5, 0.1, 8.0, 2.0, 3.0]  (walk+carry为主)"""
+Example:
+"Walk to the door and open it" → [1.0, 7.0, 0.5, 0.1, 0.5, 9.0, 2.0]  (walk to approach + reach_one to open)
+"Carry a box" → [2.0, 5.0, 0.5, 0.1, 8.0, 2.0, 3.0]  (walk+carry as main)"""
         else:
-            prompt = f"""你是机器人任务分析专家。我有8个运动专家：
+            prompt = f"""You are a robot task analysis expert. I have 8 motion experts:
 
-1. stand - 站立保持
-2. walk - 正常行走
-3. run - 快速跑步
-4. sit - 坐下动作
-5. crawl - 爬行
-6. carry - 搬运物体
-7. reach - 伸手抓取
-8. stair - 爬楼梯
+1. stand - standing maintenance
+2. walk - normal walking
+3. run - fast running
+4. sit - sitting action
+5. crawl - crawling
+6. carry - carrying objects
+7. reach - reaching and grabbing
+8. stair - climbing stairs
 
-任务："{task_desc}"
+Task: "{task_desc}"
 
-为每个专家打分(0-10)
+Score each expert (0-10)
 
-只返回8个数字，逗号分隔：
-[专家1, 专家2, 专家3, 专家4, 专家5, 专家6, 专家7, 专家8]
+Return only 8 numbers, comma-separated:
+[expert1, expert2, expert3, expert4, expert5, expert6, expert7, expert8]
 
-示例：
-"走到门前开门" → [1.0, 8.0, 0.5, 0.2, 0.1, 1.0, 7.5, 0.3]
-"坐下休息" → [2.0, 4.0, 0.5, 9.0, 0.2, 0.5, 1.0, 0.3]"""
+Example:
+"Walk to the door and open it" → [1.0, 8.0, 0.5, 0.2, 0.1, 1.0, 7.5, 0.3]
+"Sit down and rest" → [2.0, 4.0, 0.5, 9.0, 0.2, 0.5, 1.0, 0.3]"""
         
         resp = requests.post(
             f"{self.base_url}/chat/completions",
@@ -126,7 +124,7 @@ class VLM:
             json={
                 "model": self.model,
                 "messages": [
-                    {"role": "system", "content": "你是机器人专家。"},
+                    {"role": "system", "content": "You are a robot expert."},
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.3,
@@ -137,7 +135,7 @@ class VLM:
         return resp.json()['choices'][0]['message']['content']
     
     def _parse(self, text):
-        """解析权重"""
+        """Parse weights"""
         numbers = re.findall(r'[\d.]+', text)
         if len(numbers) >= self.n_experts:
             weights = np.array([float(n) for n in numbers[:self.n_experts]], dtype=np.float32)
@@ -145,12 +143,11 @@ class VLM:
         return None
     
     def _rule_based(self, task_desc):
-        """规则方案"""
+        """Rule-based approach"""
         weights = np.zeros(self.n_experts, dtype=np.float32)
         desc = task_desc.lower()
         
         if self.n_experts == 7:
-          
             keywords = {
                 'stand': 0, '站': 0, '立': 0,
                 'walk': 1, '走': 1, 'move': 1, '移动': 1,
@@ -162,7 +159,6 @@ class VLM:
                 'hand': 6, '手': 6, 'two': 6,  # reach_two
             }
         else:
-           
             keywords = {
                 'stand': 0, '站': 0,
                 'walk': 1, '走': 1, 'move': 1, '移动': 1,
@@ -190,9 +186,9 @@ if __name__ == "__main__":
     vlm = VLM()
     
     tasks = [
-        "走到门前开门",
-        "坐下休息",
-        "快速跑向终点",
+        "Walk to the door and open it",
+        "Sit down and rest",
+        "Run quickly to the finish line",
     ]
     
     for task in tasks:
